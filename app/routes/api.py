@@ -15,10 +15,10 @@ def get_sheets():
     if _sheets is None:
         cred_path = Config.SERVICE_ACCOUNT_PATH
         if not os.path.exists(cred_path):
-            raise FileNotFoundError(
-                f"Service account file not found at {cred_path}"
-            )
-        _sheets = SheetsManager(Config.GOOGLE_SHEET_ID, cred_path)
+            from app.local_storage import LocalStorage
+            _sheets = LocalStorage()
+        else:
+            _sheets = SheetsManager(Config.GOOGLE_SHEET_ID, cred_path)
     return _sheets
 
 
@@ -32,7 +32,7 @@ def health():
 def create_bill():
     """
     Create a bill via API (for agent integration).
-    
+
     POST JSON:
     {
         "customer_name": "Ramesh",
@@ -71,6 +71,44 @@ def create_bill():
         return jsonify({"error": str(e)}), 500
 
 
+@api_bp.route("/bill/<int:bill_no>", methods=["DELETE"])
+def delete_bill_api(bill_no: int):
+    """Delete a bill by bill number."""
+    try:
+        sheets = get_sheets()
+        ok = sheets.delete_bill(bill_no)
+        if ok:
+            return jsonify({"success": True, "message": f"Bill #{bill_no} deleted"})
+        return jsonify({"success": False, "error": "Bill not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@api_bp.route("/bill/<int:bill_no>", methods=["PUT"])
+def edit_bill_api(bill_no: int):
+    """Edit a bill by bill number. Accepts JSON body with fields to update."""
+    try:
+        data = request.get_json(silent=True)
+        if not data:
+            return jsonify({"error": "JSON body required"}), 400
+
+        updates = {}
+        for key in ("customer_name", "phone", "items", "total", "paid", "payment_type"):
+            if key in data:
+                updates[key] = data[key]
+
+        if not updates:
+            return jsonify({"error": "No valid fields to update"}), 400
+
+        sheets = get_sheets()
+        ok = sheets.edit_bill(bill_no, **updates)
+        if ok:
+            return jsonify({"success": True, "message": f"Bill #{bill_no} updated"})
+        return jsonify({"success": False, "error": "Bill not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @api_bp.route("/earnings")
 def get_earnings():
     """Get today's earnings."""
@@ -78,11 +116,16 @@ def get_earnings():
         sheets = get_sheets()
         total = sheets.get_today_earnings()
         by_payment = sheets.get_today_earnings_by_payment()
+        recent = sheets.get_recent_bills(10)
+        active_bills = [b for b in recent if b.get("status") != "deleted"]
+        deleted_bills = [b for b in recent if b.get("status") == "deleted"]
         return jsonify({
             "success": True,
             "total": total,
             "cash": by_payment.get("Cash", 0),
             "upi": by_payment.get("UPI", 0),
+            "recent": active_bills,
+            "deleted_bills": deleted_bills,
             "shop": Config.SHOP_NAME,
         })
     except Exception as e:
@@ -113,3 +156,60 @@ def search_bills():
         return jsonify({"success": True, "results": results, "count": len(results)})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+# ─── Settings API ───
+@api_bp.route("/settings", methods=["POST"])
+def set_setting_api():
+    """Save a setting key/value pair."""
+    try:
+        data = request.get_json(silent=True)
+        if not data:
+            return jsonify({"error": "JSON body required"}), 400
+        key = data.get("key", "").strip()
+        value = data.get("value", "").strip()
+        if not key:
+            return jsonify({"error": "Key is required"}), 400
+        sheets = get_sheets()
+        sheets.set_setting(key, value)
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@api_bp.route("/settings/<key>")
+def get_setting_api(key: str):
+    """Get a setting value."""
+    try:
+        sheets = get_sheets()
+        value = sheets.get_setting(key)
+        return jsonify({"success": True, "value": value or ""})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@api_bp.route("/upload-logo", methods=["POST"])
+def upload_logo_api():
+    """Upload shop logo image (multipart)."""
+    try:
+        if "logo" not in request.files:
+            return jsonify({"success": False, "error": "No file uploaded"}), 400
+        file = request.files["logo"]
+        if file.filename == "":
+            return jsonify({"success": False, "error": "No file selected"}), 400
+
+        static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
+        logo_path = os.path.join(static_dir, "logo.png")
+        file.save(logo_path)
+
+        try:
+            from PIL import Image
+            img = Image.open(logo_path)
+            img.thumbnail((400, 500), Image.LANCZOS)
+            img.save(logo_path, "PNG")
+        except ImportError:
+            pass
+
+        return jsonify({"success": True, "message": "Logo updated"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500

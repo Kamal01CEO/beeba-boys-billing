@@ -60,6 +60,8 @@ class LocalStorage:
             "paid": round(paid, 2),
             "change": change,
             "payment_type": payment_type,
+            "status": "active",
+            "deleted_at": "",
         })
         _save_json(BILLS_PATH, bills)
         return bill_no
@@ -70,11 +72,42 @@ class LocalStorage:
             return 1
         return max(b.get("bill_no", 0) for b in bills) + 1
 
+    def delete_bill(self, bill_no: int) -> bool:
+        """Soft-delete a bill by setting status to deleted."""
+        bills = _load_json(BILLS_PATH, [])
+        found = False
+        for b in bills:
+            if b.get("bill_no") == bill_no and b.get("status") != "deleted":
+                b["status"] = "deleted"
+                b["deleted_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                found = True
+                break
+        if found:
+            _save_json(BILLS_PATH, bills)
+        return found
+
+    def edit_bill(self, bill_no: int, **updates) -> bool:
+        """Edit a bill's customer_name, phone, items, total, paid, payment_type."""
+        bills = _load_json(BILLS_PATH, [])
+        found = False
+        for b in bills:
+            if b.get("bill_no") == bill_no and b.get("status") != "deleted":
+                for key in ("customer_name", "phone", "items", "total", "paid", "payment_type"):
+                    if key in updates:
+                        b[key] = updates[key]
+                found = True
+                break
+        if found:
+            _save_json(BILLS_PATH, bills)
+        return found
+
     def get_today_earnings(self) -> float:
         bills = _load_json(BILLS_PATH, [])
         today = datetime.now().strftime("%Y-%m-%d")
         total = 0.0
         for b in bills:
+            if b.get("status") == "deleted":
+                continue
             if b.get("timestamp", "").startswith(today):
                 total += float(b.get("total", 0))
         return round(total, 2)
@@ -84,6 +117,8 @@ class LocalStorage:
         today = datetime.now().strftime("%Y-%m-%d")
         result = {"Cash": 0.0, "UPI": 0.0}
         for b in bills:
+            if b.get("status") == "deleted":
+                continue
             if b.get("timestamp", "").startswith(today):
                 amt = float(b.get("total", 0))
                 ptype = b.get("payment_type", "Cash")
@@ -91,34 +126,42 @@ class LocalStorage:
                     result[ptype] += amt
         return {k: round(v, 2) for k, v in result.items()}
 
-    def get_recent_bills(self, limit: int = 5) -> list[dict]:
+    def _format_bill(self, b: dict) -> dict:
+        return {
+            "timestamp": b.get("timestamp", ""),
+            "bill_no": str(b.get("bill_no", "")),
+            "customer": b.get("customer_name", ""),
+            "phone": b.get("phone", ""),
+            "items": b.get("items", ""),
+            "total": b.get("total", ""),
+            "paid": b.get("paid", ""),
+            "change": b.get("change", ""),
+            "payment_type": b.get("payment_type", ""),
+            "status": b.get("status", "active"),
+            "deleted_at": b.get("deleted_at", ""),
+        }
+
+    def get_recent_bills(self, limit: int = 10) -> list[dict]:
         bills = _load_json(BILLS_PATH, [])
-        recent = sorted(bills, key=lambda b: b.get("bill_no", 0), reverse=True)[:limit]
-        return [
-            {
-                "timestamp": b.get("timestamp", ""),
-                "bill_no": b.get("bill_no", ""),
-                "customer": b.get("customer_name", ""),
-                "phone": b.get("phone", ""),
-                "items": b.get("items", ""),
-                "total": b.get("total", ""),
-                "paid": b.get("paid", ""),
-                "change": b.get("change", ""),
-                "payment_type": b.get("payment_type", ""),
-            }
-            for b in recent
-        ]
+        # Active first, then deleted, sorted by bill_no desc
+        active = [b for b in bills if b.get("status") != "deleted"]
+        deleted = [b for b in bills if b.get("status") == "deleted"]
+        active.sort(key=lambda b: b.get("bill_no", 0), reverse=True)
+        deleted.sort(key=lambda b: b.get("bill_no", 0), reverse=True)
+        combined = (active + deleted)[:limit]
+        return [self._format_bill(b) for b in combined]
 
     def get_all_bills(self) -> list[list]:
         bills = _load_json(BILLS_PATH, [])
         header = ["Timestamp", "Bill No", "Customer Name", "Phone", "Items",
-                  "Total", "Paid", "Change", "Payment Type"]
+                  "Total", "Paid", "Change", "Payment Type", "Status", "Deleted At"]
         rows = [[
             b.get("timestamp", ""), str(b.get("bill_no", "")),
             b.get("customer_name", ""), b.get("phone", ""),
             b.get("items", ""), str(b.get("total", "")),
             str(b.get("paid", "")), str(b.get("change", "")),
-            b.get("payment_type", "")
+            b.get("payment_type", ""), b.get("status", "active"),
+            b.get("deleted_at", ""),
         ] for b in bills]
         return [header] + rows
 
@@ -128,17 +171,7 @@ class LocalStorage:
         result = []
         for b in bills:
             if q in b.get("customer_name", "").lower() or q in b.get("phone", ""):
-                result.append({
-                    "timestamp": b.get("timestamp", ""),
-                    "bill_no": b.get("bill_no", ""),
-                    "customer": b.get("customer_name", ""),
-                    "phone": b.get("phone", ""),
-                    "items": b.get("items", ""),
-                    "total": b.get("total", ""),
-                    "paid": b.get("paid", ""),
-                    "change": b.get("change", ""),
-                    "payment_type": b.get("payment_type", ""),
-                })
+                result.append(self._format_bill(b))
         return result
 
     def get_setting(self, key: str) -> Optional[str]:

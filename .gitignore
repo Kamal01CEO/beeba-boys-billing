@@ -23,3 +23,5 @@ Thumbs.db
 
 # Generated
 *.pdf
+data/bills.json
+data/settings.json
