@@ -9,7 +9,8 @@ A self-contained, open-source billing system for the **Beeba Boys 1001** shop th
 **locally on a Windows laptop**, and does the full loop:
 
 1. **Dashboard**: pick item (Jeans / Shirt / Tshirt / Accessories) → enter customer name + phone →
-   set amount per item → choose Cash or UPI → submit.
+   set amount per item → choose Cash or UPI → submit. Header shows today's earnings (Cash/UPI/Total)
+   **and customers today (= bills)**.
 2. **Save**: append the bill to a **local Excel ledger** (`data/bills.xlsx`). No cloud, no accounts.
 3. **Auto-print**: print the receipt (with logo) on a **58mm ESC/POS thermal printer** (ATPOS H-58BT).
 4. **Telegram agent**: from the phone, create a bill by typing
@@ -113,7 +114,9 @@ and add a **quick-bill** path matching the requested one-liner.
   - Example: `1 shirt=800, 1 jeans=1500, 1 accessories=200 generate this bill` →
     bill for Walk-in, Cash, ₹2500, printed; bot replies with bill no + total + print status.
 - **Items** recognised: Jeans, Shirt, Tshirt/T-Shirt, Accessories (parser already normalizes names).
-- **Earnings:** `how much today` / `today earnings` / `/earnings` → total + Cash + UPI split.
+- **Earnings / stats:** `how much today` / `today earnings` / `/earnings` → total + Cash + UPI.
+  `how many customers today` / `how many bills` / `/stats` → replies with customers (= bills) today
+  **and** the earnings summary (all from `today_stats`).
 - **Recent / search:** `/recent`, `/search <name|phone>` (existing).
 - The existing interactive flow (send items with no trigger → prompt name/phone/payment) stays for users
   who want it.
@@ -125,12 +128,30 @@ and add a **quick-bill** path matching the requested one-liner.
 `PrinterManager`, and `billing_service`. Tools:
 - `create_bill(customer_name, phone, items, payment_type)` → saves + auto-prints; returns
   `{bill_no, total, printed}`.
-- `today_earnings()` → `{total, cash, upi}`.
+- `today_earnings()` → `today_stats` payload: `{date, total, cash, upi, bills, customers}`.
 - `recent_bills(limit=5)` → list of recent bills.
 - `search_bills(query)` → matches by name/phone.
 
 Run as `python -m app.mcp_server` (stdio). Documented opencode/Claude config snippet points at it.
 Dependency: add `mcp`.
+
+### 4b. Analytics — `today_stats`
+
+`app/analytics.py: today_stats(storage) -> dict` — one pure reporting function, reused by dashboard,
+bot, and MCP so the numbers are computed once and always agree:
+
+```
+{ "date": "2026-07-10", "total": 2500, "cash": 1500, "upi": 1000,
+  "bills": 3, "customers": 3 }
+```
+
+- `total` / `cash` / `upi` from existing `get_today_earnings()` + `get_today_earnings_by_payment()`.
+- `bills` = count of today's **non-deleted** bills. **`customers` == `bills`** (each bill is one customer
+  visit, per decision).
+- Needs a new `get_today_bills()` on `LocalStorage` (inherited by `ExcelStorage`) returning today's
+  non-deleted bills; `bills`/`customers` = `len(...)`. (Dormant `SheetsManager` is out of scope and not
+  updated.)
+- **Deferred (not in this build):** average bill value, top item. Structure leaves room to add them.
 
 ### 5. Shared billing service
 
@@ -184,15 +205,18 @@ Accessories.
   missing file returns `None`.
 - `tests/test_bot.py` (extend): quick-bill trigger creates + prints with defaults; `upi` override;
   `name:` override; earnings reply; unauthorized blocked.
+- `tests/test_analytics.py`: `today_stats` against a temp store with today/old/deleted bills →
+  correct total/cash/upi and `bills == customers ==` today's non-deleted count.
 - `tests/test_mcp.py`: each tool returns the expected shape against a temp `ExcelStorage`.
 - Existing route/bot tests stay green (backend swap is API-compatible).
 
 ## New / changed files
 
 - New: `app/excel_storage.py`, `app/receipt_logo.py`, `app/billing_service.py`, `app/storage.py`,
-  `app/mcp_server.py`, `AGENTS.md`, tests listed above.
+  `app/analytics.py`, `app/mcp_server.py`, `AGENTS.md`, tests listed above.
 - Changed: `app/printer.py` (Dummy render + transports), `app/config.py` (printer keys),
-  `app/routes/dashboard.py` + `app/routes/api.py` (shared helpers + API print),
+  `app/routes/dashboard.py` + `app/routes/api.py` (shared helpers + API print; `/earnings` +
+  `/api/earnings` return `bills`/`customers` from `today_stats`),
   `app/telegram_bot.py` (quick-bill), `app/templates/index.html` (Printer settings group; plus the
   already-made gold/charcoal UI, to be committed), `requirements.txt`, `.env.example`, `README.md`.
 
