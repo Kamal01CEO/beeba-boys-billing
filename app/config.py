@@ -33,6 +33,12 @@ class Config:
     # Printer
     PRINTER_VENDOR_ID = int(os.getenv("PRINTER_VENDOR_ID", "0x0416"), 16)
     PRINTER_PRODUCT_ID = int(os.getenv("PRINTER_PRODUCT_ID", "0x5011"), 16)
+    PRINTER_TRANSPORT = os.getenv("PRINTER_TRANSPORT", "windows")
+    PRINTER_SERIAL_PORT = os.getenv("PRINTER_SERIAL_PORT", "")
+    PRINTER_BAUD = int(os.getenv("PRINTER_BAUD", "9600"))
+    PRINTER_WINDOWS_NAME = os.getenv("PRINTER_WINDOWS_NAME", "")
+    PRINTER_WIDTH_DOTS = int(os.getenv("PRINTER_WIDTH_DOTS", "384"))
+    PRINTER_CHARS = int(os.getenv("PRINTER_CHARS", "32"))
 
     # Server
     FLASK_HOST = os.getenv("FLASK_HOST", "0.0.0.0")
