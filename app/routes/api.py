@@ -112,11 +112,15 @@ def get_earnings():
         recent = sheets.get_recent_bills(10)
         active_bills = [b for b in recent if b.get("status") != "deleted"]
         deleted_bills = [b for b in recent if b.get("status") == "deleted"]
+        from app.analytics import today_stats
+        stats = today_stats(sheets)
         return jsonify({
             "success": True,
             "total": total,
             "cash": by_payment.get("Cash", 0),
             "upi": by_payment.get("UPI", 0),
+            "bills": stats["bills"],
+            "customers": stats["customers"],
             "recent": active_bills,
             "deleted_bills": deleted_bills,
             "shop": Config.SHOP_NAME,
