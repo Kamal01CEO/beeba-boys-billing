@@ -40,7 +40,7 @@ class TestDashboardRoutes:
         """GET / returns the dashboard page."""
         resp = client.get("/")
         assert resp.status_code == 200
-        assert b"Billing Dashboard" in resp.data
+        assert b"Billing Suite" in resp.data
 
     def test_earnings_local_storage_fallback(self, client, local_storage):
         """GET /earnings uses local storage."""
