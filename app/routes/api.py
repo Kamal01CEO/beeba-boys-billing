@@ -49,14 +49,20 @@ def create_bill():
         if not items:
             return jsonify({"error": "At least one item is required"}), 400
 
-        total = sum(i["qty"] * i["price"] for i in items)
-        sheets = get_sheets()
-        bill_no = sheets.add_bill(customer_name, phone, items, total, total, payment_type)
-
+        from app.billing_service import create_and_print
+        from app.printer import PrinterManager
+        storage = get_sheets()
+        result = create_and_print(storage, PrinterManager.from_config_and_settings(storage), {
+            "customer_name": customer_name, "phone": phone,
+            "items": items, "payment_type": payment_type,
+        })
+        if not result["success"]:
+            return jsonify(result), 400
         return jsonify({
             "success": True,
-            "bill_no": bill_no,
-            "total": total,
+            "bill_no": result["bill_no"],
+            "total": result["total"],
+            "printed": result["printed"],
             "shop": Config.SHOP_NAME,
         })
 

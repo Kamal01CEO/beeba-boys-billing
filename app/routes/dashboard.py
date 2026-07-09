@@ -59,33 +59,19 @@ def generate_bill():
         if not items:
             return jsonify({"success": False, "error": "At least one item is required"}), 400
 
-        total = sum(i["qty"] * i["price"] for i in items)
-        paid = total
-
-        sheets = get_sheets()
-        bill_no = sheets.add_bill(customer_name, phone, items, total, paid, payment_type)
-
-        printer = get_printer()
-        printed = printer.print_bill(
-            shop_name=Config.SHOP_NAME,
-            shop_address=Config.SHOP_ADDRESS,
-            shop_contact=Config.SHOP_CONTACT,
-            bill_no=bill_no,
-            customer_name=customer_name,
-            phone=phone,
-            items=items,
-            total=total,
-            paid=paid,
-            payment_type=payment_type,
-            footer=Config.BILL_FOOTER,
-        )
-
+        from app.billing_service import create_and_print
+        result = create_and_print(get_sheets(), get_printer(), {
+            "customer_name": customer_name, "phone": phone,
+            "items": items, "payment_type": payment_type,
+        })
+        if not result["success"]:
+            return jsonify(result), 400
         return jsonify({
             "success": True,
-            "bill_no": bill_no,
-            "total": total,
-            "printed": printed,
-            "message": f"Bill #{bill_no} generated successfully!",
+            "bill_no": result["bill_no"],
+            "total": result["total"],
+            "printed": result["printed"],
+            "message": f"Bill #{result['bill_no']} generated successfully!",
         })
 
     except FileNotFoundError as e:
