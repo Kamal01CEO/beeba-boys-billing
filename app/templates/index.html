@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ shop_name }} — Billing</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f5f5f5;
+            color: #1a1a1a;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: #1a237e;
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .header h1 { font-size: 1.25rem; font-weight: 700; }
+        .header .subtitle { font-size: 0.8rem; opacity: 0.8; margin-top: 2px; }
+        .header .stats { text-align: right; font-size: 0.85rem; }
+        .header .stats .amount { font-size: 1.1rem; font-weight: 700; }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 16px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+        .card h2 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: #1a237e;
+            border-bottom: 2px solid #e8eaf6;
+            padding-bottom: 8px;
+        }
+
+        .form-group { margin-bottom: 12px; }
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #555;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1.5px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #1a237e;
+            box-shadow: 0 0 0 3px rgba(26,35,126,0.1);
+        }
+
+        .items-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .item-btn {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.15s;
+            text-align: center;
+        }
+        .item-btn:hover {
+            border-color: #1a237e;
+            background: #e8eaf6;
+            transform: translateY(-1px);
+        }
+        .item-btn.selected {
+            border-color: #1a237e;
+            background: #1a237e;
+            color: white;
+        }
+        .item-btn .price { font-size: 0.75rem; font-weight: 400; opacity: 0.7; display: block; margin-top: 2px; }
+        .item-btn.selected .price { opacity: 0.9; }
+
+        .bill-items { margin-bottom: 12px; }
+        .bill-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            margin-bottom: 6px;
+        }
+        .bill-item .info { flex: 1; }
+        .bill-item .info .name { font-weight: 600; }
+        .bill-item .info .line-total { font-weight: 700; color: #1a237e; }
+        .bill-item .remove-btn {
+            background: none;
+            border: none;
+            color: #e53935;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+
+        .qty-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
+        }
+        .qty-controls button {
+            width: 28px;
+            height: 28px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            font-weight: 700;
+        }
+        .qty-controls button:hover { background: #eee; }
+        .qty-controls span { font-weight: 600; min-width: 20px; text-align: center; }
+
+        .payment-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .payment-btn {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.15s;
+            text-align: center;
+        }
+        .payment-btn:hover { border-color: #1a237e; }
+        .payment-btn.active {
+            border-color: #1a237e;
+            background: #1a237e;
+            color: white;
+        }
+
+        .total-bar {
+            background: #e8eaf6;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 12px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .total-bar .label { font-size: 0.9rem; color: #555; }
+        .total-bar .amount { font-size: 1.5rem; font-weight: 800; color: #1a237e; }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: #1a237e;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .submit-btn:hover { background: #283593; }
+        .submit-btn:disabled {
+            background: #9fa8da;
+            cursor: not-allowed;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 14px 20px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        .toast.show { transform: translateX(0); }
+        .toast.success { background: #2e7d32; }
+        .toast.error { background: #c62828; }
+        .toast.info { background: #1565c0; }
+
+        .card.full-width { grid-column: 1 / -1; }
+
+        .recent-bills {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .recent-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 0.85rem;
+        }
+        .recent-item:last-child { border-bottom: none; }
+        .recent-item .bill-no { font-weight: 700; }
+        .recent-item .customer { color: #555; }
+        .recent-item .amount { font-weight: 700; color: #1a237e; }
+
+        @media (max-width: 768px) {
+            .container { grid-template-columns: 1fr; }
+            .header { flex-direction: column; text-align: center; gap: 8px; }
+            .header .stats { text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>🧾 {{ shop_name }}</h1>
+            <div class="subtitle">Billing Dashboard</div>
+        </div>
+        <div class="stats">
+            <div>💰 Today: <span class="amount" id="todayTotal">Rs 0</span></div>
+            <div style="font-size:0.75rem;opacity:0.7">
+                Cash: <span id="todayCash">Rs 0</span>
+                · UPI: <span id="todayUpi">Rs 0</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Left: Billing Form -->
+        <div class="card">
+            <h2>📝 New Bill</h2>
+            <form id="billForm" autocomplete="off">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+                    <div class="form-group">
+                        <label>Customer Name *</label>
+                        <input type="text" id="customerName" placeholder="Enter name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input type="tel" id="phone" placeholder="98XXXXXXXX">
+                    </div>
+                </div>
+
+                <label style="font-size:0.85rem;font-weight:600;color:#555;display:block;margin-bottom:8px;">
+                    Select Items
+                </label>
+                <div class="items-grid">
+                    <button type="button" class="item-btn" data-name="Jeans" data-price="1500">
+                        👖 Jeans <span class="price">Rs 1,500</span>
+                    </button>
+                    <button type="button" class="item-btn" data-name="Shirt" data-price="800">
+                        👔 Shirt <span class="price">Rs 800</span>
+                    </button>
+                    <button type="button" class="item-btn" data-name="T-Shirt" data-price="600">
+                        👕 T-Shirt <span class="price">Rs 600</span>
+                    </button>
+                    <button type="button" class="item-btn" data-name="Accessories" data-price="200">
+                        🧢 Accessories <span class="price">Rs 200</span>
+                    </button>
+                </div>
+
+                <div class="bill-items" id="billItems">
+                    <div style="text-align:center;color:#999;padding:20px;">
+                        Click items above to add to bill
+                    </div>
+                </div>
+
+                <div class="total-bar">
+                    <span class="label">Total</span>
+                    <span class="amount" id="totalAmount">Rs 0</span>
+                </div>
+
+                <label style="font-size:0.85rem;font-weight:600;color:#555;display:block;margin-bottom:8px;">
+                    Payment Type
+                </label>
+                <div class="payment-options">
+                    <button type="button" class="payment-btn active" data-payment="Cash">💵 Cash</button>
+                    <button type="button" class="payment-btn" data-payment="UPI">📱 UPI</button>
+                </div>
+
+                <input type="hidden" id="paymentType" value="Cash">
+                <button type="submit" class="submit-btn" id="generateBtn">
+                    🖨️ Generate &amp; Print Bill
+                </button>
+            </form>
+        </div>
+
+        <!-- Right: Recently Added Items / Quick Stats -->
+        <div class="card">
+            <h2>📋 Recent Bills</h2>
+            <div class="recent-bills" id="recentBills">
+                <div style="text-align:center;color:#999;padding:20px;">
+                    No bills yet today
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // ─── State ───
+        let billItems = [];
+        let paymentType = 'Cash';
+
+        // ─── Item Buttons ───
+        document.querySelectorAll('.item-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const name = btn.dataset.name;
+                const price = parseInt(btn.dataset.price);
+
+                // Check if already added
+                const existing = billItems.find(i => i.name === name);
+                if (existing) {
+                    existing.qty += 1;
+                } else {
+                    billItems.push({ name, price, qty: 1 });
+                }
+                updateBillDisplay();
+            });
+        });
+
+        // ─── Payment Buttons ───
+        document.querySelectorAll('.payment-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.payment-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                paymentType = btn.dataset.payment;
+                document.getElementById('paymentType').value = paymentType;
+            });
+        });
+
+        // ─── Update Bill Display ───
+        function updateBillDisplay() {
+            const container = document.getElementById('billItems');
+            const totalEl = document.getElementById('totalAmount');
+
+            if (billItems.length === 0) {
+                container.innerHTML = '<div style="text-align:center;color:#999;padding:20px;">Click items above to add to bill</div>';
+                totalEl.textContent = 'Rs 0';
+                return;
+            }
+
+            let html = '';
+            let total = 0;
+            billItems.forEach((item, index) => {
+                const lineTotal = item.qty * item.price;
+                total += lineTotal;
+                html += `
+                    <div class="bill-item">
+                        <div class="info">
+                            <div class="name">${item.name}</div>
+                            <div class="qty-controls">
+                                <button type="button" onclick="changeQty(${index}, -1)">−</button>
+                                <span>${item.qty}</span>
+                                <button type="button" onclick="changeQty(${index}, 1)">+</button>
+                                <span class="line-total" style="margin-left:12px;">Rs ${lineTotal}</span>
+                            </div>
+                        </div>
+                        <button type="button" class="remove-btn" onclick="removeItem(${index})">×</button>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+            totalEl.textContent = `Rs ${total}`;
+        }
+
+        function changeQty(index, delta) {
+            billItems[index].qty = Math.max(0, billItems[index].qty + delta);
+            if (billItems[index].qty === 0) {
+                billItems.splice(index, 1);
+            }
+            updateBillDisplay();
+        }
+
+        function removeItem(index) {
+            billItems.splice(index, 1);
+            updateBillDisplay();
+        }
+
+        // ─── Submit ───
+        document.getElementById('billForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('generateBtn');
+            const customerName = document.getElementById('customerName').value.trim();
+
+            if (!customerName) {
+                showToast('Please enter customer name', 'error');
+                return;
+            }
+            if (billItems.length === 0) {
+                showToast('Add at least one item', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Generating...';
+
+            const formData = new FormData();
+            formData.append('customer_name', customerName);
+            formData.append('phone', document.getElementById('phone').value.trim());
+            formData.append('payment_type', paymentType);
+
+            billItems.forEach(item => {
+                formData.append('item_name[]', item.name);
+                formData.append('item_qty[]', item.qty);
+                formData.append('item_price[]', item.price);
+            });
+
+            try {
+                const res = await fetch('/generate-bill', { method: 'POST', body: formData });
+                const data = await res.json();
+
+                if (data.success) {
+                    showToast(`✅ ${data.message}`, 'success');
+                    // Reset form
+                    billItems = [];
+                    document.getElementById('customerName').value = '';
+                    document.getElementById('phone').value = '';
+                    updateBillDisplay();
+                    loadEarnings();
+                } else {
+                    showToast(`❌ ${data.error}`, 'error');
+                }
+            } catch (err) {
+                showToast('❌ Network error', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🖨️ Generate & Print Bill';
+            }
+        });
+
+        // ─── Toast ───
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3500);
+        }
+
+        // ─── Load Dashboard Data ───
+        async function loadEarnings() {
+            try {
+                const res = await fetch('/earnings');
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('todayTotal').textContent = `Rs ${data.total}`;
+                    document.getElementById('todayCash').textContent = `Rs ${data.cash}`;
+                    document.getElementById('todayUpi').textContent = `Rs ${data.upi}`;
+
+                    const container = document.getElementById('recentBills');
+                    if (data.recent.length === 0) {
+                        container.innerHTML = '<div style="text-align:center;color:#999;padding:20px;">No bills yet today</div>';
+                    } else {
+                        container.innerHTML = data.recent.map(b => `
+                            <div class="recent-item">
+                                <div>
+                                    <span class="bill-no">#${b.bill_no}</span>
+                                    <span class="customer">${b.customer}</span>
+                                </div>
+                                <div>
+                                    <span class="amount">Rs ${b.total}</span>
+                                    <span style="color:#999;font-size:0.75rem;margin-left:4px;">${b.payment_type}</span>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to load earnings:', err);
+            }
+        }
+
+        // Auto-refresh earnings every 10 seconds
+        loadEarnings();
+        setInterval(loadEarnings, 10000);
+    </script>
+</body>
+</html>
