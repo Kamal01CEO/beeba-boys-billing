@@ -6,20 +6,13 @@ from app.sheets import SheetsManager
 from app.config import Config
 import os
 
+from app.storage import get_storage
+
 api_bp = Blueprint("api", __name__)
-_sheets: SheetsManager = None
 
 
 def get_sheets():
-    global _sheets
-    if _sheets is None:
-        cred_path = Config.SERVICE_ACCOUNT_PATH
-        if not os.path.exists(cred_path):
-            from app.local_storage import LocalStorage
-            _sheets = LocalStorage()
-        else:
-            _sheets = SheetsManager(Config.GOOGLE_SHEET_ID, cred_path)
-    return _sheets
+    return get_storage()
 
 
 @api_bp.route("/health")

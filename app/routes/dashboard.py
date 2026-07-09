@@ -7,23 +7,15 @@ from app.printer import PrinterManager
 from app.config import Config
 import os
 
+from app.storage import get_storage
+
 dashboard_bp = Blueprint("dashboard", __name__)
 
-_sheets: SheetsManager = None
 _printer: PrinterManager = None
 
 
 def get_sheets():
-    global _sheets
-    if _sheets is None:
-        cred_path = Config.SERVICE_ACCOUNT_PATH
-        if not os.path.exists(cred_path):
-            from app.local_storage import LocalStorage
-            _sheets = LocalStorage()
-            print("📁 No service account found — using LOCAL storage (demo mode)")
-        else:
-            _sheets = SheetsManager(Config.GOOGLE_SHEET_ID, cred_path)
-    return _sheets
+    return get_storage()
 
 
 def get_printer():
