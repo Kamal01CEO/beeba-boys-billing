@@ -19,11 +19,11 @@ def get_sheets():
     if _sheets is None:
         cred_path = Config.SERVICE_ACCOUNT_PATH
         if not os.path.exists(cred_path):
-            raise FileNotFoundError(
-                f"Service account file not found at {cred_path}. "
-                "See credentials/README.md for setup instructions."
-            )
-        _sheets = SheetsManager(Config.GOOGLE_SHEET_ID, cred_path)
+            from app.local_storage import LocalStorage
+            _sheets = LocalStorage()
+            print("📁 No service account found — using LOCAL storage (demo mode)")
+        else:
+            _sheets = SheetsManager(Config.GOOGLE_SHEET_ID, cred_path)
     return _sheets
 
 

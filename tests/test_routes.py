@@ -25,14 +25,14 @@ class TestDashboardRoutes:
         assert resp.status_code == 200
         assert b"Billing Dashboard" in resp.data
 
-    def test_earnings_no_sheets_returns_error(self, client, mocker):
-        """GET /earnings without creds gives an error."""
-        # Mock os.path.exists to return False -> no service account
+    def test_earnings_local_storage_fallback(self, client, mocker):
+        """GET /earnings falls back to local storage when no service account."""
         mocker.patch("os.path.exists", return_value=False)
         resp = client.get("/earnings")
-        assert resp.status_code == 500
+        assert resp.status_code == 200
         data = json.loads(resp.data)
-        assert data["success"] is False
+        assert data["success"] is True
+        assert data["total"] == 0.0
 
 
 class TestAPIRoutes:
