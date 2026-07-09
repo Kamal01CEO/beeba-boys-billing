@@ -137,6 +137,16 @@ class TestLocalStorage:
         assert s.get_setting("nonexistent") is None
 
     @backup_and_restore
+    def test_get_today_bills_excludes_deleted(self):
+        s = self._make_storage()
+        b1 = s.add_bill("A", "", [{"name": "Shirt", "qty": 1, "price": 100}], 100, 100, "Cash")
+        b2 = s.add_bill("B", "", [{"name": "Jeans", "qty": 1, "price": 200}], 200, 200, "UPI")
+        s.delete_bill(b1)
+        today = s.get_today_bills()
+        assert len(today) == 1
+        assert today[0]["customer_name"] == "B"
+
+    @backup_and_restore
     def test_search_includes_status(self):
         s = self._make_storage()
         b1 = s.add_bill("Ramesh", "911", [{"name": "X", "qty": 1, "price": 100}], 100, 100, "Cash")

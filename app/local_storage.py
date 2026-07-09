@@ -126,6 +126,14 @@ class LocalStorage:
                     result[ptype] += amt
         return {k: round(v, 2) for k, v in result.items()}
 
+    def get_today_bills(self) -> list[dict]:
+        bills = _load_json(BILLS_PATH, [])
+        today = datetime.now().strftime("%Y-%m-%d")
+        return [
+            b for b in bills
+            if b.get("status") != "deleted" and b.get("timestamp", "").startswith(today)
+        ]
+
     def _format_bill(self, b: dict) -> dict:
         return {
             "timestamp": b.get("timestamp", ""),
