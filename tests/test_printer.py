@@ -1,78 +1,66 @@
-"""
-Tests for Printer module (mocked — no real hardware).
-"""
+"""Tests for PrinterManager (mocked transports — no hardware)."""
+import sys
 import pytest
 from app.printer import PrinterManager
 
+BILL = dict(
+    shop_name="Beeba Boys", shop_address="Main Road", shop_contact="9876543210",
+    bill_no=5, customer_name="Ramesh", phone="9812345678",
+    items=[{"name": "Shirt", "qty": 2, "price": 800}],
+    total=1600, paid=1600, payment_type="Cash", footer="Thank you!",
+)
 
-class TestPrinterManager:
-    """Test PrinterManager with mocked USB backend."""
 
-    def test_connect_failure_graceful(self, mocker):
-        """Printer connection failure doesn't crash."""
-        mocker.patch("escpos.printer.Usb", side_effect=Exception("No device found"))
-        printer = PrinterManager(0x0416, 0x5011)
-        result = printer.connect()
-        assert result is False
-        assert printer.is_connected is False
+def test_render_returns_bytes_with_shop_name():
+    pm = PrinterManager(print_logo=False)
+    raw = pm.render_bill_bytes(**BILL)
+    assert isinstance(raw, (bytes, bytearray))
+    assert len(raw) > 0
+    assert b"Beeba Boys" in raw
 
-    def test_connect_success(self, mocker):
-        """Printer connection succeeds."""
-        mock_usb = mocker.patch("escpos.printer.Usb")
-        printer = PrinterManager(0x0416, 0x5011)
-        result = printer.connect()
-        assert result is True
-        assert printer.is_connected is True
-        mock_usb.assert_called_once_with(0x0416, 0x5011, timeout=5)
 
-    def test_print_bill_returns_false_when_not_connected(self, mocker):
-        """print_bill returns False without a connection."""
-        printer = PrinterManager()
-        result = printer.print_bill(
-            shop_name="Test", shop_address="", shop_contact="",
-            bill_no=1, customer_name="Test", phone="123",
-            items=[{"name": "Shirt", "qty": 1, "price": 800}],
-            total=800, paid=800, payment_type="Cash",
-        )
-        assert result is False
+def test_logo_makes_output_larger():
+    with_logo = PrinterManager(print_logo=True).render_bill_bytes(**BILL)
+    without = PrinterManager(print_logo=False).render_bill_bytes(**BILL)
+    assert len(with_logo) > len(without)  # real logo at app/static/logo.png
 
-    def test_print_bill_success(self, mocker):
-        """print_bill calls printer methods in correct order."""
-        mock_printer = mocker.MagicMock()
-        mocker.patch("escpos.printer.Usb", return_value=mock_printer)
 
-        printer = PrinterManager()
-        printer.connect()
+def test_send_none_returns_false():
+    assert PrinterManager(transport="none").send(b"x") is False
 
-        result = printer.print_bill(
-            shop_name="Beeba Boys",
-            shop_address="Shop 1, Main Road",
-            shop_contact="9876543210",
-            bill_no=5,
-            customer_name="Ramesh",
-            phone="9812345678",
-            items=[{"name": "Shirt", "qty": 2, "price": 800}],
-            total=1600,
-            paid=1600,
-            payment_type="Cash",
-            footer="Thank you!",
-        )
-        assert result is True
 
-        # Verify printer methods called
-        assert mock_printer.set.call_count >= 3
-        assert mock_printer.text.call_count >= 5
-        mock_printer.cut.assert_called_once()
-        mock_printer.close.assert_not_called()
+def test_send_usb_dispatch(mocker):
+    dev = mocker.MagicMock()
+    mocker.patch("escpos.printer.Usb", return_value=dev)
+    assert PrinterManager(transport="usb").send(b"hello") is True
+    dev._raw.assert_called_once_with(b"hello")
 
-    def test_disconnect(self, mocker):
-        """disconnect closes the printer."""
-        mock_printer = mocker.MagicMock()
-        mocker.patch("escpos.printer.Usb", return_value=mock_printer)
 
-        printer = PrinterManager()
-        printer.connect()
-        printer.disconnect()
+def test_send_serial_dispatch(mocker):
+    dev = mocker.MagicMock()
+    mocker.patch("escpos.printer.Serial", return_value=dev)
+    pm = PrinterManager(transport="serial", serial_port="COM5")
+    assert pm.send(b"hello") is True
+    dev._raw.assert_called_once_with(b"hello")
 
-        mock_printer.close.assert_called_once()
-        assert printer.is_connected is False
+
+def test_send_windows_dispatch(mocker):
+    win = mocker.MagicMock()
+    win.OpenPrinter.return_value = 42
+    mocker.patch.dict(sys.modules, {"win32print": win})
+    pm = PrinterManager(transport="windows", windows_name="POS58")
+    assert pm.send(b"raw") is True
+    win.OpenPrinter.assert_called_once_with("POS58")
+    win.WritePrinter.assert_called_once_with(42, b"raw")
+
+
+def test_send_swallows_exceptions(mocker):
+    mocker.patch("escpos.printer.Usb", side_effect=Exception("no device"))
+    assert PrinterManager(transport="usb").send(b"x") is False
+
+
+def test_print_bill_calls_send(mocker):
+    pm = PrinterManager(transport="none", print_logo=False)
+    spy = mocker.spy(pm, "send")
+    assert pm.print_bill(**BILL) is False
+    spy.assert_called_once()

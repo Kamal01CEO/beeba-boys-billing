@@ -19,12 +19,7 @@ def get_sheets():
 
 
 def get_printer():
-    global _printer
-    if _printer is None:
-        _printer = PrinterManager(
-            Config.PRINTER_VENDOR_ID, Config.PRINTER_PRODUCT_ID
-        )
-    return _printer
+    return PrinterManager.from_config_and_settings(get_storage())
 
 
 @dashboard_bp.route("/")
@@ -70,23 +65,20 @@ def generate_bill():
         sheets = get_sheets()
         bill_no = sheets.add_bill(customer_name, phone, items, total, paid, payment_type)
 
-        printed = False
         printer = get_printer()
-        if printer.connect():
-            printed = printer.print_bill(
-                shop_name=Config.SHOP_NAME,
-                shop_address=Config.SHOP_ADDRESS,
-                shop_contact=Config.SHOP_CONTACT,
-                bill_no=bill_no,
-                customer_name=customer_name,
-                phone=phone,
-                items=items,
-                total=total,
-                paid=paid,
-                payment_type=payment_type,
-                footer=Config.BILL_FOOTER,
-            )
-            printer.disconnect()
+        printed = printer.print_bill(
+            shop_name=Config.SHOP_NAME,
+            shop_address=Config.SHOP_ADDRESS,
+            shop_contact=Config.SHOP_CONTACT,
+            bill_no=bill_no,
+            customer_name=customer_name,
+            phone=phone,
+            items=items,
+            total=total,
+            paid=paid,
+            payment_type=payment_type,
+            footer=Config.BILL_FOOTER,
+        )
 
         return jsonify({
             "success": True,

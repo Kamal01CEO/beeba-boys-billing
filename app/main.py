@@ -32,33 +32,22 @@ def start_flask():
 def start_telegram():
     """Start the Telegram bot."""
     from app.config import Config
-    from app.sheets import SheetsManager
     from app.printer import PrinterManager
+    from app.storage import get_storage
 
     if not Config.TELEGRAM_BOT_TOKEN:
         logger.warning("TELEGRAM_BOT_TOKEN not set. Telegram bot disabled.")
         return
 
-    # Initialize sheets for the bot
-    cred_path = Config.SERVICE_ACCOUNT_PATH
-    if not os.path.exists(cred_path):
-        logger.error(
-            f"Service account file not found at {cred_path}. "
-            "Telegram bot cannot start."
-        )
-        return
-
-    sheets = SheetsManager(Config.GOOGLE_SHEET_ID, cred_path)
-    printer = PrinterManager(Config.PRINTER_VENDOR_ID, Config.PRINTER_PRODUCT_ID)
-    # Try to connect printer once (optional)
-    printer.connect()
-    printer.disconnect()
+    # Storage: Excel by default, Google Sheets if a service account is present.
+    storage = get_storage()
+    printer = PrinterManager.from_config_and_settings(storage)
 
     from app.telegram_bot import BillBot
 
     bot = BillBot(
         token=Config.TELEGRAM_BOT_TOKEN,
-        sheets_manager=sheets,
+        sheets_manager=storage,
         printer_manager=printer,
         allowed_user_ids=Config.ALLOWED_USER_IDS,
         shop_name=Config.SHOP_NAME,
