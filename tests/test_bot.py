@@ -72,6 +72,33 @@ class TestBillBot:
         assert bot._is_authorized(101) is True
         assert bot._is_authorized(999) is False
 
+    def test_quick_bill_defaults(self):
+        bot = BillBot("test", None, None, [])
+        qb = bot._parse_quick_bill("1 shirt=800, 1 jeans=1500, 1 accessories=200 generate this bill")
+        assert qb is not None
+        assert qb["customer_name"] == "Walk-in"
+        assert qb["payment_type"] == "Cash"
+        assert len(qb["items"]) == 3
+        assert sum(i["qty"] * i["price"] for i in qb["items"]) == 2500
+
+    def test_quick_bill_upi_and_name_override(self):
+        bot = BillBot("test", None, None, [])
+        qb = bot._parse_quick_bill("name: Ramesh 1 shirt=800 upi generate")
+        assert qb["customer_name"] == "Ramesh"
+        assert qb["payment_type"] == "UPI"
+        assert len(qb["items"]) == 1
+
+    def test_quick_bill_needs_trigger(self):
+        bot = BillBot("test", None, None, [])
+        # items but no trigger word -> not a quick bill
+        assert bot._parse_quick_bill("1 shirt=800, 1 jeans=1500") is None
+
+    def test_stats_text_has_numbers(self):
+        bot = BillBot("test", None, None, [])
+        txt = bot._stats_text({"date": "2026-07-10", "total": 2500, "cash": 1500,
+                               "upi": 1000, "bills": 3, "customers": 3})
+        assert "2500" in txt and "3" in txt
+
     def test_parse_items_handles_newlines(self):
         """Items separated by newlines are parsed correctly."""
         bot = BillBot("test", None, None, [])

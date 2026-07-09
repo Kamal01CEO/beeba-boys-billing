@@ -130,6 +130,18 @@ class BillBot:
             await self._show_earnings(update)
             return
 
+        if text in ("how many customers today", "how many customers", "how many bills",
+                    "how many bills today", "stats", "summary", "/stats"):
+            from app.analytics import today_stats
+            await update.message.reply_text(self._stats_text(today_stats(self.sheets)),
+                                            parse_mode="Markdown")
+            return
+
+        quick = self._parse_quick_bill(update.message.text)
+        if quick:
+            await self._finalize_quick_bill(update, quick)
+            return
+
         if text in ("recent", "last 5", "last 5 bills", "recent bills"):
             await self._show_recent(update)
             return
@@ -246,18 +258,11 @@ class BillBot:
             await update.message.reply_text(f"❌ Failed to create bill: {e}")
 
     async def _show_earnings(self, update: Update):
-        """Show today's earnings."""
+        """Show today's earnings + customers."""
         try:
-            total = self.sheets.get_today_earnings()
-            by_payment = self.sheets.get_today_earnings_by_payment()
-            await update.message.reply_text(
-                f"💰 *{self.shop_name} — Today's Earnings*\n\n"
-                f"💵 Cash: Rs {by_payment.get('Cash', 0):.0f}\n"
-                f"📱 UPI: Rs {by_payment.get('UPI', 0):.0f}\n"
-                f"──────────────\n"
-                f"*Total: Rs {total:.0f}*",
-                parse_mode="Markdown",
-            )
+            from app.analytics import today_stats
+            await update.message.reply_text(self._stats_text(today_stats(self.sheets)),
+                                            parse_mode="Markdown")
         except Exception as e:
             await update.message.reply_text(f"❌ Error: {e}")
 
@@ -322,6 +327,62 @@ class BillBot:
             await update.message.reply_text("⛔ Unauthorized.")
             return
         await self._show_earnings(update)
+
+    TRIGGER_WORDS = ("generate", "print", "make bill", "bill it")
+
+    def _parse_quick_bill(self, text: str):
+        """Return {items, customer_name, payment_type} if text is an immediate bill, else None."""
+        import re
+        low = text.lower()
+        if not any(w in low for w in self.TRIGGER_WORDS):
+            return None
+
+        customer_name = "Walk-in"
+        m = re.search(r"name\s*:\s*([A-Za-z][A-Za-z .]*)", text)
+        if m:
+            customer_name = m.group(1).strip()
+
+        payment_type = "Cash"
+        if re.search(r"\bupi\b", low):
+            payment_type = "UPI"
+        elif re.search(r"\bcash\b", low):
+            payment_type = "Cash"
+
+        # Strip override / trigger tokens before item parsing
+        cleaned = text
+        if m:
+            cleaned = cleaned.replace(m.group(0), " ")
+        cleaned = re.sub(r"(?i)\b(generate|print|this|bill it|make bill|the|bill|upi|cash)\b", " ", cleaned)
+
+        items = self._parse_items(cleaned)
+        if not items:
+            return None
+        return {"items": items, "customer_name": customer_name, "payment_type": payment_type}
+
+    def _stats_text(self, stats: dict) -> str:
+        return (
+            f"📊 *{self.shop_name} — Today*\n\n"
+            f"👥 Customers: *{stats.get('customers', 0)}*  (bills: {stats.get('bills', 0)})\n"
+            f"💵 Cash: Rs {stats.get('cash', 0):.0f}\n"
+            f"📱 UPI: Rs {stats.get('upi', 0):.0f}\n"
+            f"──────────────\n"
+            f"*Total: Rs {stats.get('total', 0):.0f}*"
+        )
+
+    async def _finalize_quick_bill(self, update, qb):
+        from app.billing_service import create_and_print
+        result = create_and_print(self.sheets, self.printer, qb)
+        if not result.get("success"):
+            await update.message.reply_text(f"❌ {result.get('error')}")
+            return
+        summary = ", ".join(f"{i['qty']}x {i['name']}={i['price']:.0f}" for i in qb["items"])
+        msg = (
+            f"✅ *Bill #{result['bill_no']} Generated!*\n\n"
+            f"👤 {qb['customer_name']}\n📦 {summary}\n"
+            f"💵 Total: Rs {result['total']:.0f}\n💳 {qb['payment_type']}\n"
+        )
+        msg += "🖨️ *Printed*" if result["printed"] else "⚠️ Print skipped (no printer)"
+        await update.message.reply_text(msg, parse_mode="Markdown")
 
     def _parse_items(self, text: str) -> list[dict]:
         """Parse items from natural language text.
