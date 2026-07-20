@@ -8,6 +8,8 @@ load_dotenv()
 
 
 class Config:
+    # Storage
+    STORAGE_BACKEND = os.getenv("STORAGE_BACKEND", "excel").strip().lower()
     # Google Sheets
     GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID", "")
     SERVICE_ACCOUNT_PATH = os.path.join(
@@ -31,15 +33,24 @@ class Config:
     BILL_FOOTER = os.getenv("BILL_FOOTER", "Thank you! Visit again!")
 
     # Printer
-    PRINTER_VENDOR_ID = int(os.getenv("PRINTER_VENDOR_ID", "0x0416"), 16)
-    PRINTER_PRODUCT_ID = int(os.getenv("PRINTER_PRODUCT_ID", "0x5011"), 16)
+    # ATPOS H-58BT identifies over USB as STMicroelectronics 0x0456:0x0808.
+    PRINTER_VENDOR_ID = int(os.getenv("PRINTER_VENDOR_ID", "0x0456"), 16)
+    PRINTER_PRODUCT_ID = int(os.getenv("PRINTER_PRODUCT_ID", "0x0808"), 16)
+    PRINTER_USB_IN_ENDPOINT = int(os.getenv("PRINTER_USB_IN_ENDPOINT", "0x81"), 16)
+    PRINTER_USB_OUT_ENDPOINT = int(os.getenv("PRINTER_USB_OUT_ENDPOINT", "0x03"), 16)
+    PRINTER_USB_CHUNK_BYTES = int(os.getenv("PRINTER_USB_CHUNK_BYTES", "512"))
+    PRINTER_USB_CHUNK_DELAY_MS = int(os.getenv("PRINTER_USB_CHUNK_DELAY_MS", "25"))
+    PRINTER_USB_FINAL_DELAY_MS = int(os.getenv("PRINTER_USB_FINAL_DELAY_MS", "500"))
     PRINTER_TRANSPORT = os.getenv("PRINTER_TRANSPORT", "windows")
     PRINTER_SERIAL_PORT = os.getenv("PRINTER_SERIAL_PORT", "")
     PRINTER_BAUD = int(os.getenv("PRINTER_BAUD", "9600"))
     PRINTER_WINDOWS_NAME = os.getenv("PRINTER_WINDOWS_NAME", "")
     PRINTER_WIDTH_DOTS = int(os.getenv("PRINTER_WIDTH_DOTS", "384"))
-    PRINTER_CHARS = int(os.getenv("PRINTER_CHARS", "32"))
+    PRINTER_LOGO_WIDTH_DOTS = int(os.getenv("PRINTER_LOGO_WIDTH_DOTS", "144"))
+    PRINTER_CHARS = int(os.getenv("PRINTER_CHARS", "42"))
+    PRINTER_AUTO_CUT = os.getenv("PRINTER_AUTO_CUT", "false").strip().casefold() in {"1", "true", "yes", "on"}
 
     # Server
-    FLASK_HOST = os.getenv("FLASK_HOST", "0.0.0.0")
+    FLASK_HOST = os.getenv("FLASK_HOST", "127.0.0.1")
     FLASK_PORT = int(os.getenv("FLASK_PORT", "5000"))
+    FLASK_SERVER = os.getenv("FLASK_SERVER", "waitress").strip().lower()

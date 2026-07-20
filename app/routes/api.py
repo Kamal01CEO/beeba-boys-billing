@@ -2,7 +2,6 @@
 Billing Software — REST API Routes (for agent integration)
 """
 from flask import Blueprint, request, jsonify
-from app.sheets import SheetsManager
 from app.config import Config
 import os
 
@@ -55,16 +54,14 @@ def create_bill():
         result = create_and_print(storage, PrinterManager.from_config_and_settings(storage), {
             "customer_name": customer_name, "phone": phone,
             "items": items, "payment_type": payment_type,
+            "discount_percent": data.get("discount_percent", 0),
+            "print_receipt": data.get("print_receipt"),
         })
         if not result["success"]:
             return jsonify(result), 400
-        return jsonify({
-            "success": True,
-            "bill_no": result["bill_no"],
-            "total": result["total"],
-            "printed": result["printed"],
-            "shop": Config.SHOP_NAME,
-        })
+        result["shop"] = storage.get_setting("shop_name") or Config.SHOP_NAME
+        result["outstanding_debit"] = storage.get_total_outstanding() if hasattr(storage, "get_total_outstanding") else 0
+        return jsonify(result)
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -79,6 +76,8 @@ def delete_bill_api(bill_no: int):
         if ok:
             return jsonify({"success": True, "message": f"Bill #{bill_no} deleted"})
         return jsonify({"success": False, "error": "Bill not found"}), 404
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -110,27 +109,30 @@ def edit_bill_api(bill_no: int):
 
 @api_bp.route("/earnings")
 def get_earnings():
-    """Get today's earnings."""
+    """Get earnings for today, 7d, 30d, or 1y."""
     try:
         sheets = get_sheets()
-        total = sheets.get_today_earnings()
-        by_payment = sheets.get_today_earnings_by_payment()
+        from app.analytics import period_stats
+        stats = period_stats(sheets, request.args.get("range", "today"))
         recent = sheets.get_recent_bills(10)
         active_bills = [b for b in recent if b.get("status") != "deleted"]
         deleted_bills = [b for b in recent if b.get("status") == "deleted"]
-        from app.analytics import today_stats
-        stats = today_stats(sheets)
         return jsonify({
             "success": True,
-            "total": total,
-            "cash": by_payment.get("Cash", 0),
-            "upi": by_payment.get("UPI", 0),
+            "total": stats["total"],
+            "cash": stats["cash"],
+            "upi": stats["upi"],
             "bills": stats["bills"],
             "customers": stats["customers"],
+            "period": stats["period"],
+            "period_label": stats["period_label"],
             "recent": active_bills,
             "deleted_bills": deleted_bills,
             "shop": Config.SHOP_NAME,
+            "outstanding_debit": sheets.get_total_outstanding() if hasattr(sheets, "get_total_outstanding") else 0,
         })
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -159,6 +161,49 @@ def search_bills():
         return jsonify({"success": True, "results": results, "count": len(results)})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@api_bp.route("/debits")
+def list_debit_accounts_api():
+    try:
+        storage = get_sheets()
+        return jsonify({
+            "success": True,
+            "accounts": storage.get_debit_accounts(),
+            "total_outstanding": storage.get_total_outstanding(),
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@api_bp.route("/debits/<account_id>")
+def get_debit_account_api(account_id: str):
+    try:
+        return jsonify({"success": True, "account": get_sheets().get_debit_account(account_id)})
+    except KeyError as e:
+        return jsonify({"success": False, "error": str(e).strip("'")}), 404
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@api_bp.route("/debits/<account_id>/payments", methods=["POST"])
+def receive_debit_payment_api(account_id: str):
+    try:
+        data = request.get_json(silent=True) or {}
+        storage = get_sheets()
+        payment = storage.record_debit_payment(
+            account_id, data.get("amount"), data.get("payment_method", "Cash"), data.get("note", "")
+        )
+        from app.billing_service import print_debit_payment_receipt
+        from app.printer import PrinterManager
+        print_debit_payment_receipt(storage, PrinterManager.from_config_and_settings(storage), payment)
+        return jsonify({"success": True, "payment": payment})
+    except KeyError as e:
+        return jsonify({"success": False, "error": str(e).strip("'")}), 404
+    except (TypeError, ValueError) as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 # ─── Settings API ───

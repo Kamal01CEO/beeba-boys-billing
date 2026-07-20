@@ -206,7 +206,7 @@ class BillBot:
             await self._finalize_bill(update, context)
 
     async def _finalize_bill(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Create the bill in Google Sheets and print."""
+        """Create the bill in the configured storage and print."""
         try:
             data = context.user_data
             bill_no = self.sheets.add_bill(

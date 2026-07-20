@@ -44,26 +44,17 @@ else
     echo "✅ .env found"
 fi
 
-# Create credentials directory hint
-if [ ! -f "credentials/service-account.json" ]; then
-    echo ""
-    echo "⚠️  Google service account not found."
-    echo "   Place your service-account.json in: credentials/"
-    echo "   Instructions: https://docs.gspread.org/en/latest/oauth2.html"
-    echo ""
-fi
-
 echo ""
 echo "═══════════════════════════════════════════"
 echo "✅ Setup complete!"
 echo ""
 echo "   Start the software:"
-echo "     python app/main.py          # Web UI + Telegram bot"
-echo "     python app/main.py web       # Web UI only"
-echo "     python app/main.py bot       # Telegram bot only"
+echo "     python -m app.main           # Web UI + Telegram bot"
+echo "     python -m app.main web       # Web UI only"
+echo "     python -m app.main bot       # Telegram bot only"
 echo ""
 echo "   Open the dashboard:"
-echo "     http://localhost:5000"
+echo "     http://127.0.0.1:5000"
 echo ""
 echo "   Run tests:"
 echo "     pytest tests/ -v"

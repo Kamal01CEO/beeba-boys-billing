@@ -29,6 +29,9 @@ class SheetsManager:
     COL_PAYMENT = 8
     COL_STATUS = 9
     COL_DELETED_AT = 10
+    COL_SUBTOTAL = 11
+    COL_DISCOUNT_PERCENT = 12
+    COL_DISCOUNT_AMOUNT = 13
 
     def __init__(self, sheet_id: str, credentials_path: str):
         self.sheet_id = sheet_id
@@ -49,10 +52,11 @@ class SheetsManager:
 
         # Bills sheet
         if "Bills" not in existing:
-            ws = self.sh.add_worksheet("Bills", 1000, 12)
+            ws = self.sh.add_worksheet("Bills", 1000, 14)
             ws.append_row(
                 ["Timestamp", "Bill No", "Customer Name", "Phone", "Items",
-                 "Total", "Paid", "Change", "Payment Type", "Status", "Deleted At"]
+                 "Total", "Paid", "Change", "Payment Type", "Status", "Deleted At",
+                 "Subtotal", "Discount %", "Discount Amount"]
             )
         else:
             # Ensure status column exists
@@ -67,6 +71,11 @@ class SheetsManager:
                     ws.update_cell(i, self.COL_STATUS + 1, "active")
             if len(header) <= self.COL_DELETED_AT:
                 ws.update_cell(1, self.COL_DELETED_AT + 1, "Deleted At")
+            for index, label in ((self.COL_SUBTOTAL, "Subtotal"),
+                                 (self.COL_DISCOUNT_PERCENT, "Discount %"),
+                                 (self.COL_DISCOUNT_AMOUNT, "Discount Amount")):
+                if len(header) <= index:
+                    ws.update_cell(1, index + 1, label)
 
         # Settings sheet
         if "Settings" not in existing:
@@ -90,6 +99,9 @@ class SheetsManager:
             "payment_type": safe_get(self.COL_PAYMENT),
             "status": safe_get(self.COL_STATUS, "active"),
             "deleted_at": safe_get(self.COL_DELETED_AT, ""),
+            "subtotal": safe_get(self.COL_SUBTOTAL, safe_get(self.COL_TOTAL)),
+            "discount_percent": safe_get(self.COL_DISCOUNT_PERCENT, "0"),
+            "discount_amount": safe_get(self.COL_DISCOUNT_AMOUNT, "0"),
         }
 
     def add_bill(
@@ -100,6 +112,9 @@ class SheetsManager:
         total: float,
         paid: float,
         payment_type: str,
+        subtotal: float | None = None,
+        discount_percent: float = 0,
+        discount_amount: float = 0,
     ) -> int:
         """Add a new bill to the Bills sheet. Returns the bill number."""
         ws = self.sh.worksheet("Bills")
@@ -123,6 +138,9 @@ class SheetsManager:
                 payment_type,
                 "active",
                 "",
+                round(total if subtotal is None else subtotal, 2),
+                round(discount_percent, 2),
+                round(discount_amount, 2),
             ]
         )
         return bill_no

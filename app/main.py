@@ -6,6 +6,10 @@ import threading
 import os
 import sys
 
+# Support both `python -m app.main` and the historical `python app/main.py` command.
+if __package__ in (None, ""):
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -26,7 +30,11 @@ def start_flask():
     logger.info(
         f"Web UI starting at http://{Config.FLASK_HOST}:{Config.FLASK_PORT}"
     )
-    app.run(host=Config.FLASK_HOST, port=Config.FLASK_PORT, debug=False)
+    if Config.FLASK_SERVER == "flask":
+        app.run(host=Config.FLASK_HOST, port=Config.FLASK_PORT, debug=False)
+    else:
+        from waitress import serve
+        serve(app, host=Config.FLASK_HOST, port=Config.FLASK_PORT, threads=8)
 
 
 def start_telegram():
@@ -39,7 +47,7 @@ def start_telegram():
         logger.warning("TELEGRAM_BOT_TOKEN not set. Telegram bot disabled.")
         return
 
-    # Storage: Excel by default, Google Sheets if a service account is present.
+    # Storage backend is explicit; Excel/local is the production shop default.
     storage = get_storage()
     printer = PrinterManager.from_config_and_settings(storage)
 
@@ -63,10 +71,15 @@ if __name__ == "__main__":
     elif mode == "bot":
         start_telegram()
     elif mode == "all":
-        # Run both in parallel
-        flask_thread = threading.Thread(target=start_flask, daemon=True)
-        flask_thread.start()
-        start_telegram()
+        from app.config import Config
+        if not Config.TELEGRAM_BOT_TOKEN:
+            logger.info("Telegram token is not configured; running the dashboard only.")
+            start_flask()
+        else:
+            # Telegram polling requires the main thread; the web server runs beside it.
+            flask_thread = threading.Thread(target=start_flask, daemon=True)
+            flask_thread.start()
+            start_telegram()
     else:
         print(f"Usage: python main.py [web|bot|all]")
         print("  web  - Start web dashboard only")

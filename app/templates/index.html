@@ -145,6 +145,7 @@
             font-variant-numeric: tabular-nums;
         }
         .header .stats .sublabel { font-size:0.68rem; color: var(--text-muted); margin-top: 1px; }
+        .period-select { margin-bottom:4px; padding:4px 7px; border:1px solid var(--border); border-radius:7px; background:var(--field); color:var(--text); font-size:.7rem; cursor:pointer; }
 
         .gear-btn {
             background: rgba(201,162,75,0.08);
@@ -330,7 +331,7 @@
         /* ─── Payment ─── */
         .payment-options {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(3, 1fr);
             gap: 10px;
             margin-bottom: 14px;
         }
@@ -353,6 +354,19 @@
             color: #241c07;
             box-shadow: 0 4px 14px rgba(201,162,75,0.28);
         }
+        .print-toggle { display:flex; align-items:center; gap:9px; margin:-2px 0 14px; padding:10px 12px; border:1px solid var(--border); border-radius:9px; background:var(--field); color:var(--text); cursor:pointer; font-size:.84rem; font-weight:650; }
+        .print-toggle input { width:18px; height:18px; accent-color:var(--gold); }
+        .print-badge { display:inline-block; margin-left:6px; padding:2px 7px; border-radius:5px; font-size:.64rem; font-weight:750; }
+        .print-badge.printed { background:var(--success-bg); color:var(--success); }
+        .print-badge.skipped { background:rgba(255,255,255,.06); color:var(--text-muted); }
+        .print-badge.failed { background:var(--danger-bg); color:var(--danger); }
+
+        .discount-control { display:grid; grid-template-columns:1fr 120px; gap:12px; align-items:end; margin-top:14px; }
+        .discount-control label { display:block; color:var(--text-muted); font-size:.75rem; font-weight:650; margin-bottom:6px; text-transform:uppercase; letter-spacing:.5px; }
+        .discount-control input { width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; background:var(--field); color:var(--text); font:inherit; }
+        .discount-saving { text-align:right; color:var(--success); font-weight:750; padding-bottom:11px; font-variant-numeric:tabular-nums; }
+        .total-summary { display:flex; align-items:center; gap:18px; }
+        .total-summary .breakdown { text-align:right; color:var(--text-muted); font-size:.72rem; line-height:1.5; }
 
         /* ─── Total Bar ─── */
         .total-bar {
@@ -469,6 +483,36 @@
         }
         .payment-type.cash { background: var(--success-bg); color: var(--success); }
         .payment-type.upi { background: var(--info-bg); color: var(--info); }
+        .payment-type.debit { background: rgba(224,131,121,0.14); color: var(--danger); }
+
+        /* ─── Customer Debit Ledger ─── */
+        .debit-card { grid-column: 1 / -1; }
+        .debit-summary { display:flex; align-items:center; gap:16px; margin-bottom:16px; }
+        .debit-summary .big-number { font-family:var(--serif); font-size:2rem; color:var(--danger); font-weight:700; }
+        .debit-accounts { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; }
+        .debit-account-card { width:100%; text-align:left; color:var(--text); font:inherit; background:var(--field); border:1px solid var(--border); border-radius:11px; padding:15px; cursor:pointer; transition:all .18s; }
+        .debit-account-card:hover { border-color:var(--gold); transform:translateY(-2px); }
+        .debit-account-card.paid { opacity:.7; }
+        .debit-account-card .account-top { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+        .debit-account-card .account-name { font-weight:700; }
+        .debit-account-card .account-phone { color:var(--text-muted); font-size:.75rem; margin-top:3px; }
+        .debit-account-card .account-balance { color:var(--danger); font-size:1.15rem; font-weight:800; white-space:nowrap; }
+        .debit-account-card.paid .account-balance { color:var(--success); }
+        .debit-account-card .account-meta { color:var(--text-muted); font-size:.72rem; margin-top:12px; }
+        .ledger-layout { display:grid; grid-template-columns:1.2fr .8fr; gap:18px; }
+        .ledger-panel { background:var(--field); border:1px solid var(--border); border-radius:11px; padding:15px; }
+        .ledger-panel h3 { color:var(--gold-bright); font-family:var(--serif); margin-bottom:12px; }
+        .ledger-transaction { padding:10px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; gap:12px; }
+        .ledger-transaction:last-child { border-bottom:0; }
+        .ledger-transaction .tx-title { font-weight:650; font-size:.84rem; }
+        .ledger-transaction .tx-meta { color:var(--text-muted); font-size:.7rem; margin-top:3px; }
+        .ledger-transaction .tx-purchase { color:var(--danger); font-weight:800; }
+        .ledger-transaction .tx-payment { color:var(--success); font-weight:800; }
+        .debit-item-row { display:grid; grid-template-columns:1fr 70px 100px 34px; gap:7px; margin-bottom:8px; }
+        .debit-item-row input, .debit-payment-grid input, .debit-payment-grid select { width:100%; padding:9px; border-radius:7px; border:1px solid var(--border); background:#0c0c0f; color:var(--text); }
+        .debit-item-row button { border:1px solid var(--border); background:transparent; color:var(--danger); border-radius:7px; cursor:pointer; }
+        .small-action { padding:9px 12px; border:1px solid var(--border); background:rgba(201,162,75,.08); color:var(--gold-bright); border-radius:8px; cursor:pointer; font-weight:650; }
+        .debit-payment-grid { display:grid; grid-template-columns:1fr 100px; gap:8px; }
 
         .recent-item .actions {
             display: flex;
@@ -661,6 +705,8 @@
             .bill-item { flex-wrap: wrap; }
             .bill-item .price-input { width: 80px; }
             body::before { background-size: min(78vw, 420px) auto; }
+            .ledger-layout { grid-template-columns:1fr; }
+            .debit-item-row { grid-template-columns:1fr 60px 90px 34px; }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -689,10 +735,17 @@
         </div>
         <div class="header-right">
             <div class="stats">
-                <div><span class="label">💰 Today</span> <span class="amount" id="todayTotal">₹0</span></div>
+                <select id="earningsPeriod" class="period-select" aria-label="Earnings period">
+                    <option value="today">Today</option>
+                    <option value="7d">Last 7 days</option>
+                    <option value="30d">Last 30 days</option>
+                    <option value="1y">Last 1 year</option>
+                </select>
+                <div><span class="label">💰 <span id="earningsPeriodLabel">Today</span></span> <span class="amount" id="todayTotal">₹0</span></div>
                 <div class="sublabel">
                     Cash: <span id="todayCash">₹0</span>
                     · UPI: <span id="todayUpi">₹0</span>
+                    · Due: <span id="headerDebitDue">₹0</span>
                 </div>
             </div>
             <button class="gear-btn" id="settingsBtn" title="Settings">⚙️</button>
@@ -733,9 +786,20 @@
                     </div>
                 </div>
 
+                <div class="discount-control">
+                    <div>
+                        <label for="discountPercent">Customer Discount (%)</label>
+                        <input type="number" id="discountPercent" min="0" max="100" step="0.01" value="0" inputmode="decimal" placeholder="Enter percentage, e.g. 10">
+                    </div>
+                    <div class="discount-saving" id="discountSaving">You save ₹0</div>
+                </div>
+
                 <div class="total-bar">
-                    <span class="label">Total</span>
-                    <span class="amount" id="totalAmount">₹0</span>
+                    <span class="label">Final Total</span>
+                    <div class="total-summary">
+                        <div class="breakdown">Subtotal <span id="subtotalAmount">₹0</span><br>Discount <span id="discountAmount">−₹0</span></div>
+                        <span class="amount" id="totalAmount">₹0</span>
+                    </div>
                 </div>
 
                 <label style="font-size:0.8rem;font-weight:600;color:var(--text-muted);display:block;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">
@@ -744,9 +808,14 @@
                 <div class="payment-options">
                     <button type="button" class="payment-btn active" data-payment="Cash">💵 Cash</button>
                     <button type="button" class="payment-btn" data-payment="UPI">📱 UPI</button>
+                    <button type="button" class="payment-btn" data-payment="Debit">🕒 Pay Later</button>
                 </div>
 
                 <input type="hidden" id="paymentType" value="Cash">
+                <label class="print-toggle">
+                    <input type="checkbox" id="printReceipt" checked>
+                    <span id="printReceiptLabel">✓ Print receipt automatically</span>
+                </label>
                 <button type="submit" class="submit-btn" id="generateBtn">
                     🖨️ Generate & Print Bill
                 </button>
@@ -763,6 +832,83 @@
                 <div class="empty-state">
                     <div class="icon">🧾</div>
                     <div class="text">No bills yet today</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card debit-card">
+            <h2>
+                <span>📒 Customer Debits</span>
+                <button class="small-action" onclick="loadDebits()">Refresh</button>
+            </h2>
+            <div class="debit-summary">
+                <div>
+                    <div style="color:var(--text-muted);font-size:.7rem;text-transform:uppercase;letter-spacing:1px;">Total outstanding</div>
+                    <div class="big-number" id="totalOutstanding">₹0</div>
+                </div>
+                <div style="color:var(--text-muted);font-size:.82rem;">Open a customer to add another item purchase or record a partial/full payment.</div>
+            </div>
+            <div class="debit-accounts" id="debitAccounts">
+                <div class="empty-state"><div class="icon">✅</div><div class="text">No customer debit accounts</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debit Account Modal -->
+    <div class="modal-overlay" id="debitModal">
+        <div class="modal" style="max-width:920px;">
+            <div class="modal-header">
+                <div>
+                    <h2 id="debitModalName">Customer Debit</h2>
+                    <div id="debitModalPhone" style="color:var(--text-muted);font-size:.78rem;margin-top:3px;"></div>
+                </div>
+                <button class="modal-close" onclick="closeDebitModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                    <span style="color:var(--text-muted);">Outstanding balance</span>
+                    <strong id="debitModalBalance" style="color:var(--danger);font-size:1.7rem;">₹0</strong>
+                </div>
+                <div class="ledger-layout">
+                    <div class="ledger-panel">
+                        <h3>Account History</h3>
+                        <div id="debitTransactions"></div>
+                    </div>
+                    <div style="display:grid;gap:14px;align-content:start;">
+                        <div class="ledger-panel">
+                            <h3>Add New Purchase</h3>
+                            <div id="debitPurchaseRows"></div>
+                            <button type="button" class="small-action" onclick="addDebitItemRow()">+ Add another item</button>
+                            <div class="form-group" style="margin:12px 0 8px;">
+                                <label for="debitPurchaseDiscount">Customer Discount (%)</label>
+                                <input type="number" id="debitPurchaseDiscount" min="0" max="100" step="0.01" value="0" inputmode="decimal">
+                            </div>
+                            <div style="display:flex;justify-content:space-between;margin:10px 0 2px;color:var(--text-muted);font-size:.78rem;">
+                                <span>Subtotal</span><span id="debitPurchaseSubtotal">₹0</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;margin:2px 0;color:var(--success);font-size:.78rem;">
+                                <span>Discount</span><span id="debitPurchaseDiscountAmount">−₹0</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;margin:5px 0 10px;font-weight:700;">
+                                <span>Final total</span><span id="debitPurchaseTotal">₹0</span>
+                            </div>
+                            <label class="print-toggle" style="margin:0 0 10px;">
+                                <input type="checkbox" id="debitPurchasePrint">
+                                <span>Print this pay-later receipt</span>
+                            </label>
+                            <button type="button" class="submit-btn" id="saveDebitPurchaseBtn" style="padding:11px;" onclick="submitDebitPurchase()">Save Purchase</button>
+                        </div>
+                        <div class="ledger-panel">
+                            <h3>Receive Payment</h3>
+                            <div class="debit-payment-grid">
+                                <input type="number" id="debitPaymentAmount" min="0.01" step="0.01" placeholder="Amount received">
+                                <select id="debitPaymentMethod"><option>Cash</option><option>UPI</option></select>
+                            </div>
+                            <input type="text" id="debitPaymentNote" placeholder="Optional note" style="width:100%;padding:9px;margin:8px 0 10px;border-radius:7px;border:1px solid var(--border);background:#0c0c0f;color:var(--text);">
+                            <div style="font-size:12px;color:var(--muted);margin:0 0 9px;">🖨️ Cash/UPI payment receipt prints automatically</div>
+                            <button type="button" class="submit-btn" style="padding:11px;" onclick="submitDebitPayment()">Record Payment & Print Receipt</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -785,8 +931,29 @@
                     <input type="text" id="settingsAddress" placeholder="Your shop address">
                 </div>
                 <div class="form-group">
+                    <label>Shop Phone Number</label>
+                    <input type="tel" id="settingsPhone" value="{{ shop_contact }}" placeholder="Phone number printed on receipts">
+                </div>
+                <div class="form-group">
                     <label>Bill Footer</label>
                     <input type="text" id="settingsFooter" placeholder="Thank you! Visit again!">
+                </div>
+                <div class="form-group">
+                    <label>Printer Connection</label>
+                    <select id="settingsPrinterTransport">
+                        <option value="windows">Windows printer (driver installed)</option>
+                        <option value="serial">Bluetooth / Serial (COM port)</option>
+                        <option value="usb">USB (ESC/POS)</option>
+                        <option value="none">No printer</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Windows Printer Name</label>
+                    <input type="text" id="settingsPrinterWinName" placeholder="e.g. POS58 Printer">
+                </div>
+                <div class="form-group">
+                    <label>Bluetooth/Serial COM Port</label>
+                    <input type="text" id="settingsPrinterCom" placeholder="e.g. COM5">
                 </div>
                 <div class="form-group">
                     <label>Shop Logo</label>
@@ -796,6 +963,11 @@
                         <label class="logo-upload-btn" id="logoUploadBtn">Choose File</label>
                         <input type="file" id="logoFileInput" accept="image/*">
                     </div>
+                </div>
+                <div class="form-group">
+                    <label>Financial Data Location</label>
+                    <input type="text" id="settingsDataLocation" readonly>
+                    <button type="button" class="small-action" id="createBackupBtn" style="margin-top:9px;">Create Backup Now</button>
                 </div>
             </div>
             <div class="modal-footer">
@@ -814,26 +986,56 @@
         let paymentType = 'Cash';
         let editingBillNo = null;
         let editOriginalHTML = '';
+        let activeDebitAccountId = null;
+
+        const money = value => `₹${Number(value || 0).toLocaleString('en-IN', {minimumFractionDigits: 0, maximumFractionDigits: 2})}`;
+        const calculateDiscount = (items, rawPercent) => {
+            const subtotal = Math.round(items.reduce((sum, item) => sum + Number(item.qty || 0) * Number(item.price || 0), 0) * 100) / 100;
+            const entered = Number(rawPercent || 0);
+            const percent = Number.isFinite(entered) ? Math.min(100, Math.max(0, entered)) : 0;
+            const discountAmount = Math.round((subtotal * percent / 100) * 100) / 100;
+            return { subtotal, percent, discountAmount, total: Math.round((subtotal - discountAmount) * 100) / 100 };
+        };
+        const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+        })[char]);
 
         // ─── Init ───
         document.addEventListener('DOMContentLoaded', () => {
             loadEarnings();
+            loadDebits();
             // Auto-refresh every 10s
             setInterval(loadEarnings, 10000);
             loadSettings();
         });
+        document.getElementById('earningsPeriod').addEventListener('change', loadEarnings);
 
         // ─── Load Settings ───
         async function loadSettings() {
             try {
-                const [addrRes, footerRes] = await Promise.all([
+                const [addrRes, phoneRes, footerRes, ptRes, pwnRes, pcomRes, infoRes] = await Promise.all([
                     fetch('/settings/shop_address'),
+                    fetch('/settings/shop_contact'),
                     fetch('/settings/bill_footer'),
+                    fetch('/settings/printer_transport'),
+                    fetch('/settings/printer_windows_name'),
+                    fetch('/settings/printer_serial_port'),
+                    fetch('/system-info'),
                 ]);
                 const addr = await addrRes.json();
+                const phone = await phoneRes.json();
                 const footer = await footerRes.json();
+                const pt = await ptRes.json();
+                const pwn = await pwnRes.json();
+                const pcom = await pcomRes.json();
+                const info = await infoRes.json();
                 if (addr.success) document.getElementById('settingsAddress').value = addr.value || '';
+                if (phone.success && phone.value) document.getElementById('settingsPhone').value = phone.value;
                 if (footer.success) document.getElementById('settingsFooter').value = footer.value || '';
+                if (pt.success && pt.value) document.getElementById('settingsPrinterTransport').value = pt.value;
+                if (pwn.success) document.getElementById('settingsPrinterWinName').value = pwn.value || '';
+                if (pcom.success) document.getElementById('settingsPrinterCom').value = pcom.value || '';
+                if (info.success) document.getElementById('settingsDataLocation').value = info.data_dir || '';
             } catch(e) {}
         }
 
@@ -864,8 +1066,25 @@
                 btn.classList.add('active');
                 paymentType = btn.dataset.payment;
                 document.getElementById('paymentType').value = paymentType;
+                document.getElementById('printReceipt').checked = paymentType !== 'Debit';
+                updatePrintControls();
             });
         });
+
+        function updatePrintControls() {
+            const shouldPrint = document.getElementById('printReceipt').checked;
+            const label = document.getElementById('printReceiptLabel');
+            label.textContent = shouldPrint
+                ? '✓ Print receipt automatically'
+                : (paymentType === 'Debit' ? 'Print is off — check to print this pay-later bill' : 'Print is off');
+            const button = document.getElementById('generateBtn');
+            if (paymentType === 'Debit') {
+                button.textContent = shouldPrint ? '📒 Save Pay-Later Bill & Print' : '📒 Save Pay-Later Bill';
+            } else {
+                button.textContent = shouldPrint ? '🖨️ Generate & Print Bill' : '🧾 Generate Bill';
+            }
+        }
+        document.getElementById('printReceipt').addEventListener('change', updatePrintControls);
 
         // ─── Render Bill Items List ───
         function renderBillList() {
@@ -896,8 +1115,11 @@
 
         // ─── Update Total (no DOM rebuild) ───
         function updateTotal() {
-            const total = billItems.reduce((sum, item) => sum + item.qty * (item.price || 0), 0);
-            document.getElementById('totalAmount').textContent = `₹${total}`;
+            const totals = calculateDiscount(billItems, document.getElementById('discountPercent').value);
+            document.getElementById('subtotalAmount').textContent = money(totals.subtotal);
+            document.getElementById('discountAmount').textContent = `−${money(totals.discountAmount)}`;
+            document.getElementById('discountSaving').textContent = `You save ${money(totals.discountAmount)}`;
+            document.getElementById('totalAmount').textContent = money(totals.total);
             document.querySelectorAll('.bill-item').forEach((el, i) => {
                 const lt = el.querySelector('.line-total');
                 if (lt && billItems[i]) {
@@ -905,6 +1127,7 @@
                 }
             });
         }
+        document.getElementById('discountPercent').addEventListener('input', updateTotal);
 
         // ─── Event Delegation: Bill Items (no focus loss on price input) ───
         document.getElementById('billItems').addEventListener('click', (e) => {
@@ -967,6 +1190,8 @@
             formData.append('customer_name', customerName);
             formData.append('phone', document.getElementById('phone').value.trim());
             formData.append('payment_type', paymentType);
+            formData.append('discount_percent', document.getElementById('discountPercent').value || '0');
+            formData.append('print_receipt', document.getElementById('printReceipt').checked ? 'true' : 'false');
             billItems.forEach(item => {
                 formData.append('item_name[]', item.name);
                 formData.append('item_qty[]', item.qty);
@@ -977,13 +1202,24 @@
                 const res = await fetch('/generate-bill', { method: 'POST', body: formData });
                 const data = await res.json();
                 if (data.success) {
-                    showToast(`✅ Bill #${data.bill_no} — ₹${data.total}`, 'success');
+                    const dueSuffix = data.payment_type === 'Debit' ? ` · Due ${money(data.balance)}` : '';
+                    const printSuffix = data.printed ? ' · ✓ Printed' : (data.print_requested ? ' · ⚠ Printer failed' : ' · Print skipped');
+                    showToast(`✅ Bill #${data.bill_no} — ${money(data.total)}${dueSuffix}${printSuffix}`, data.print_requested && !data.printed ? 'error' : 'success');
                     billItems = [];
                     document.getElementById('customerName').value = '';
                     document.getElementById('phone').value = '';
+                    document.getElementById('discountPercent').value = '0';
+                    paymentType = 'Cash';
+                    document.getElementById('paymentType').value = 'Cash';
+                    document.querySelectorAll('.payment-btn').forEach(button => {
+                        button.classList.toggle('active', button.dataset.payment === 'Cash');
+                    });
+                    document.getElementById('printReceipt').checked = true;
+                    updatePrintControls();
                     renderBillList();
                     updateTotal();
                     loadEarnings();
+                    loadDebits();
                 } else {
                     showToast(`❌ ${data.error}`, 'error');
                 }
@@ -991,20 +1227,23 @@
                 showToast('❌ Network error', 'error');
             } finally {
                 btn.disabled = false;
-                btn.textContent = '🖨️ Generate & Print Bill';
+                updatePrintControls();
             }
         });
 
         // ─── Load Earnings ───
         async function loadEarnings() {
             try {
-                const res = await fetch('/earnings');
+                const period = document.getElementById('earningsPeriod').value;
+                const res = await fetch(`/earnings?range=${encodeURIComponent(period)}`);
                 const data = await res.json();
                 if (!data.success) return;
 
                 document.getElementById('todayTotal').textContent = `₹${data.total}`;
                 document.getElementById('todayCash').textContent = `₹${data.cash}`;
                 document.getElementById('todayUpi').textContent = `₹${data.upi}`;
+                document.getElementById('earningsPeriodLabel').textContent = data.period_label || 'Today';
+                document.getElementById('headerDebitDue').textContent = money(data.outstanding_debit);
 
                 renderRecentBills(data.recent || [], data.deleted_bills || []);
             } catch(e) {}
@@ -1024,6 +1263,14 @@
             all.forEach(bill => {
                 const isDeleted = bill.status === 'deleted';
                 const ptype = (bill.payment_type || '').toLowerCase();
+                const printBadge = bill.printed === true
+                    ? '<span class="print-badge printed">✓ Printed</span>'
+                    : (bill.print_requested === false
+                        ? '<span class="print-badge skipped">No print</span>'
+                        : (bill.print_requested === true ? '<span class="print-badge failed">Print failed</span>' : ''));
+                const discountMeta = Number(bill.discount_percent || 0) > 0
+                    ? ` · ${Number(bill.discount_percent).toLocaleString('en-IN', {maximumFractionDigits:2})}% discount (−${money(bill.discount_amount)})`
+                    : '';
 
                 html += `
                     <div class="recent-item ${isDeleted ? 'deleted' : ''}" data-bill="${bill.bill_no}">
@@ -1031,21 +1278,22 @@
                             <span class="bill-no">
                                 #${bill.bill_no}
                                 ${isDeleted ? '<span class="del-badge">Deleted</span>' : ''}
+                                ${printBadge}
                             </span>
                             <span class="amount">₹${bill.total}</span>
                         </div>
-                        <div class="customer" id="cust_${bill.bill_no}">${bill.customer}</div>
+                        <div class="customer" id="cust_${bill.bill_no}">${escapeHtml(bill.customer)}</div>
                         <div class="meta">
                             <span>
-                                <span id="items_${bill.bill_no}">${bill.items}</span>
+                                <span id="items_${bill.bill_no}">${escapeHtml(bill.items)}</span>
                                 <span style="margin:0 6px">·</span>
-                                <span id="ts_${bill.bill_no}">${bill.timestamp}</span>
+                                <span id="ts_${bill.bill_no}">${escapeHtml(bill.timestamp)}${discountMeta}</span>
                             </span>
                             <div style="display:flex;align-items:center;gap:6px;">
-                                <span class="payment-type ${ptype}" id="ptype_${bill.bill_no}">${bill.payment_type}</span>
+                                <span class="payment-type ${ptype}" id="ptype_${bill.bill_no}">${escapeHtml(bill.payment_type)}</span>
                                 ${isDeleted ? '' : `
                                 <div class="actions" style="display:flex;gap:4px;">
-                                    <button class="edit-btn" data-bill="${bill.bill_no}" onclick="startEdit(${bill.bill_no})">✏️</button>
+                                    ${ptype === 'debit' ? '' : `<button class="edit-btn" data-bill="${bill.bill_no}" onclick="startEdit(${bill.bill_no})">✏️</button>`}
                                     <button class="delete-btn" data-bill="${bill.bill_no}" onclick="deleteBill(${bill.bill_no})">🗑️</button>
                                 </div>
                                 `}
@@ -1103,9 +1351,9 @@
             }
 
             // Make customer editable
-            custEl.innerHTML = `<input class="edit-field" type="text" id="edit_cust_${billNo}" value="${currentCust}">`;
+            custEl.innerHTML = `<input class="edit-field" type="text" id="edit_cust_${billNo}" value="${escapeHtml(currentCust)}">`;
             // Make items editable
-            itemsEl.innerHTML = `<input class="edit-field" type="text" id="edit_items_${billNo}" value="${currentItems}">`;
+            itemsEl.innerHTML = `<input class="edit-field" type="text" id="edit_items_${billNo}" value="${escapeHtml(currentItems)}">`;
             // Make payment type editable
             ptypeEl.outerHTML = `<select class="edit-field" id="edit_ptype_${billNo}" style="width:auto;display:inline-block;">
                 <option value="Cash" ${currentPtype === 'Cash' ? 'selected' : ''}>Cash</option>
@@ -1150,6 +1398,163 @@
             editingBillNo = null;
         }
 
+        // ─── Customer Debit Ledger ───
+        async function loadDebits() {
+            try {
+                const res = await fetch('/debits');
+                const data = await res.json();
+                if (!data.success) return;
+                document.getElementById('totalOutstanding').textContent = money(data.total_outstanding);
+                document.getElementById('headerDebitDue').textContent = money(data.total_outstanding);
+                const container = document.getElementById('debitAccounts');
+                if (!data.accounts.length) {
+                    container.innerHTML = '<div class="empty-state"><div class="icon">✅</div><div class="text">No customer debit accounts</div></div>';
+                    return;
+                }
+                container.innerHTML = data.accounts.map(account => `
+                    <button type="button" class="debit-account-card ${account.status === 'paid' ? 'paid' : ''}"
+                         onclick="openDebitAccount('${account.account_id}')">
+                        <div class="account-top">
+                            <div><div class="account-name">${escapeHtml(account.customer_name)}</div>
+                            <div class="account-phone">${escapeHtml(account.phone || 'No phone saved')}</div></div>
+                            <div class="account-balance">${account.balance ? money(account.balance) : 'Paid'}</div>
+                        </div>
+                        <div class="account-meta">${account.purchases} purchase${account.purchases === 1 ? '' : 's'} · Paid ${money(account.total_paid)}</div>
+                    </button>`).join('');
+            } catch (e) {
+                showToast('Could not load debit accounts', 'error');
+            }
+        }
+
+        async function openDebitAccount(accountId) {
+            try {
+                const res = await fetch(`/debits/${encodeURIComponent(accountId)}`);
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error);
+                activeDebitAccountId = accountId;
+                renderDebitAccount(data.account);
+                document.getElementById('debitModal').classList.add('open');
+            } catch (e) {
+                showToast(e.message || 'Could not open customer debit', 'error');
+            }
+        }
+
+        function renderDebitAccount(account) {
+            document.getElementById('debitModalName').textContent = account.customer_name;
+            document.getElementById('debitModalPhone').textContent = account.phone || 'No phone saved';
+            document.getElementById('debitModalBalance').textContent = money(account.balance);
+            const paymentInput = document.getElementById('debitPaymentAmount');
+            paymentInput.value = '';
+            paymentInput.max = account.balance;
+            document.getElementById('debitPaymentNote').value = '';
+            const history = document.getElementById('debitTransactions');
+            history.innerHTML = account.transactions.length ? account.transactions.map(tx => {
+                const purchase = tx.type === 'purchase';
+                const txPrint = tx.printed === true
+                    ? ' · ✓ Printed'
+                    : (tx.print_requested === false ? ' · No print' : (tx.print_requested === true ? ' · Print failed' : ''));
+                const txDiscount = purchase && Number(tx.discount_percent || 0) > 0
+                    ? ` · ${Number(tx.discount_percent).toLocaleString('en-IN', {maximumFractionDigits:2})}% discount (−${money(tx.discount_amount)})`
+                    : '';
+                return `<div class="ledger-transaction">
+                    <div><div class="tx-title">${purchase ? `Bill #${tx.bill_no} · ${escapeHtml(tx.items)}` : `Payment received · ${escapeHtml(tx.payment_method)}`}</div>
+                    <div class="tx-meta">${escapeHtml(tx.timestamp)}${tx.note ? ` · ${escapeHtml(tx.note)}` : ''}${txDiscount}${txPrint}</div></div>
+                    <div class="${purchase ? 'tx-purchase' : 'tx-payment'}">${purchase ? '+' : '−'}${money(tx.amount)}</div>
+                </div>`;
+            }).join('') : '<div class="empty-state"><div class="text">No transactions</div></div>';
+            document.getElementById('debitPurchaseRows').innerHTML = '';
+            document.getElementById('debitPurchaseDiscount').value = '0';
+            document.getElementById('debitPurchasePrint').checked = false;
+            updateDebitPurchasePrintButton();
+            addDebitItemRow();
+        }
+
+        function closeDebitModal() {
+            document.getElementById('debitModal').classList.remove('open');
+            activeDebitAccountId = null;
+        }
+
+        function addDebitItemRow() {
+            const row = document.createElement('div');
+            row.className = 'debit-item-row';
+            row.innerHTML = '<input class="debit-item-name" placeholder="Item name"><input class="debit-item-qty" type="number" min="1" value="1" title="Quantity"><input class="debit-item-price" type="number" min="0.01" step="0.01" placeholder="Price"><button type="button" title="Remove">×</button>';
+            row.querySelector('button').addEventListener('click', () => { row.remove(); updateDebitPurchaseTotal(); });
+            row.querySelectorAll('input').forEach(input => input.addEventListener('input', updateDebitPurchaseTotal));
+            document.getElementById('debitPurchaseRows').appendChild(row);
+            row.querySelector('.debit-item-name').focus();
+            updateDebitPurchaseTotal();
+        }
+
+        function debitPurchaseItems() {
+            return [...document.querySelectorAll('.debit-item-row')].map(row => ({
+                name: row.querySelector('.debit-item-name').value.trim(),
+                qty: Number(row.querySelector('.debit-item-qty').value),
+                price: Number(row.querySelector('.debit-item-price').value),
+            })).filter(item => item.name || item.price);
+        }
+
+        function updateDebitPurchaseTotal() {
+            const totals = calculateDiscount(debitPurchaseItems(), document.getElementById('debitPurchaseDiscount').value);
+            document.getElementById('debitPurchaseSubtotal').textContent = money(totals.subtotal);
+            document.getElementById('debitPurchaseDiscountAmount').textContent = `−${money(totals.discountAmount)}`;
+            document.getElementById('debitPurchaseTotal').textContent = money(totals.total);
+        }
+        document.getElementById('debitPurchaseDiscount').addEventListener('input', updateDebitPurchaseTotal);
+
+        function updateDebitPurchasePrintButton() {
+            const shouldPrint = document.getElementById('debitPurchasePrint').checked;
+            document.getElementById('saveDebitPurchaseBtn').textContent = shouldPrint
+                ? 'Save Purchase & Print'
+                : 'Save Purchase';
+        }
+        document.getElementById('debitPurchasePrint').addEventListener('change', updateDebitPurchasePrintButton);
+
+        async function submitDebitPurchase() {
+            const items = debitPurchaseItems();
+            if (!items.length || items.some(item => !item.name || item.qty <= 0 || item.price <= 0)) {
+                showToast('Enter a name, quantity, and price for every item', 'error'); return;
+            }
+            try {
+                const res = await fetch(`/debits/${encodeURIComponent(activeDebitAccountId)}/purchase`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({
+                        items,
+                        discount_percent: document.getElementById('debitPurchaseDiscount').value || 0,
+                        print_receipt: document.getElementById('debitPurchasePrint').checked,
+                    })
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error);
+                const printText = data.printed ? ' · ✓ Printed' : (data.print_requested ? ' · ⚠ Printer failed' : ' · Print skipped');
+                showToast(`Purchase added · New due ${money(data.balance)}${printText}`, data.print_requested && !data.printed ? 'error' : 'success');
+                await openDebitAccount(activeDebitAccountId);
+                loadDebits(); loadEarnings();
+            } catch (e) { showToast(e.message || 'Could not add purchase', 'error'); }
+        }
+
+        async function submitDebitPayment() {
+            const amount = Number(document.getElementById('debitPaymentAmount').value);
+            if (!amount || amount <= 0) { showToast('Enter the amount received', 'error'); return; }
+            try {
+                const res = await fetch(`/debits/${encodeURIComponent(activeDebitAccountId)}/payments`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({
+                        amount,
+                        payment_method: document.getElementById('debitPaymentMethod').value,
+                        note: document.getElementById('debitPaymentNote').value.trim(),
+                    })
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error);
+                const receiptText = data.payment.printed ? ' · ✓ Receipt printed' : ' · ⚠ Receipt print failed';
+                showToast(`Payment received · Remaining ${money(data.payment.balance)}${receiptText}`, data.payment.printed ? 'success' : 'error');
+                await openDebitAccount(activeDebitAccountId);
+                loadDebits(); loadEarnings();
+            } catch (e) { showToast(e.message || 'Could not record payment', 'error'); }
+        }
+
+        document.getElementById('debitModal').addEventListener('click', e => {
+            if (e.target.id === 'debitModal') closeDebitModal();
+        });
+
         // ─── Settings Modal ───
         const modal = document.getElementById('settingsModal');
         const settingsBtn = document.getElementById('settingsBtn');
@@ -1175,10 +1580,22 @@
             }
         });
 
+        document.getElementById('createBackupBtn').addEventListener('click', async () => {
+            try {
+                const res = await fetch('/backup', {method: 'POST'});
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error);
+                showToast('Backup created successfully', 'success');
+            } catch (e) {
+                showToast(e.message || 'Backup failed', 'error');
+            }
+        });
+
         // Save settings
         settingsSave.addEventListener('click', async () => {
             const shopName = document.getElementById('settingsShopName').value.trim();
             const address = document.getElementById('settingsAddress').value.trim();
+            const phone = document.getElementById('settingsPhone').value.trim();
             const footer = document.getElementById('settingsFooter').value.trim();
             const logoFile = logoInput.files[0];
 
@@ -1193,14 +1610,10 @@
                         })
                     );
                 }
-                if (address) {
-                    saves.push(
-                        fetch('/settings', {
-                            method: 'POST',
-                            body: new URLSearchParams({ key: 'shop_address', value: address }),
-                        })
-                    );
-                }
+                saves.push(fetch('/settings', { method: 'POST',
+                    body: new URLSearchParams({ key: 'shop_address', value: address }) }));
+                saves.push(fetch('/settings', { method: 'POST',
+                    body: new URLSearchParams({ key: 'shop_contact', value: phone }) }));
                 if (footer) {
                     saves.push(
                         fetch('/settings', {
@@ -1209,6 +1622,16 @@
                         })
                     );
                 }
+                // Printer settings
+                saves.push(fetch('/settings', { method: 'POST',
+                    body: new URLSearchParams({ key: 'printer_transport',
+                        value: document.getElementById('settingsPrinterTransport').value }) }));
+                saves.push(fetch('/settings', { method: 'POST',
+                    body: new URLSearchParams({ key: 'printer_windows_name',
+                        value: document.getElementById('settingsPrinterWinName').value.trim() }) }));
+                saves.push(fetch('/settings', { method: 'POST',
+                    body: new URLSearchParams({ key: 'printer_serial_port',
+                        value: document.getElementById('settingsPrinterCom').value.trim() }) }));
                 // Upload logo
                 if (logoFile) {
                     const logoData = new FormData();

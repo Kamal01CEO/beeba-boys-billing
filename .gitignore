@@ -25,3 +25,8 @@ Thumbs.db
 *.pdf
 data/bills.json
 data/settings.json
+data/debit_payments.json
+data/bills.xlsx
+data/.billing.lock
+data/backups/
+data/manual-test/

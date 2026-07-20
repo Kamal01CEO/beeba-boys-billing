@@ -20,6 +20,9 @@ def generate_bill_pdf(
     paid: float,
     payment_type: str,
     footer: str = "",
+    subtotal: float | None = None,
+    discount_percent: float = 0,
+    discount_amount: float = 0,
 ) -> bytes:
     """
     Generate a bill PDF and return it as bytes.
@@ -84,6 +87,13 @@ def generate_bill_pdf(
     c.line(left_margin, y, width - left_margin, y)
     y -= 5 * mm
 
+    subtotal = total if subtotal is None else subtotal
+    if discount_amount > 0:
+        c.setFont("Helvetica", 9)
+        c.drawString(left_margin, y, f"Subtotal: Rs {subtotal:.2f}")
+        y -= 4 * mm
+        c.drawString(left_margin, y, f"Discount ({discount_percent:g}%): -Rs {discount_amount:.2f}")
+        y -= 5 * mm
     c.setFont("Helvetica-Bold", 11)
     c.drawString(left_margin, y, f"Total: Rs {total:.0f}")
     y -= 5 * mm
